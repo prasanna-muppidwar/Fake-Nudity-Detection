@@ -5,7 +5,6 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-
 # Define the DeepAI API key from your account (replace 'your-api-key' with your actual key)
 DEEPAI_API_KEY = 'quickstart-QUdJIGlzIGNvbWluZy4uLi4K'
 
