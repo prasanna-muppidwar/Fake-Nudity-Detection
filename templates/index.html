@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/index.css">
+    <link rel="icon" href="/static/logo.png" type="image/png">
     <title>Nude Detection Portal!</title>
 </head>
 
@@ -13,27 +14,73 @@
         <h1>Nude Detection Portal!</h1>
         <div>Loading...</div>
         <div>
-            <form method="POST">
+            <form method="POST" id="searchForm">
                 <div class="form-group">
-                    <label for="language">Select Method:</label>
-                    <select name="language" class="form-control">
+                    <label for="method">Select Method:</label>
+                    <select name="method" class="form-control" id="methodSelect">
                         <option value="key-search">Search Entirely by Key Word</option>
-                        <option value="url-search">Upload Url</option>  
-                        <option value="upload-search">Upload Image</option>    
-  
+                        <option value="url-search">Upload Url</option>
+                        <option value="upload-search">Upload Image</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <textarea name="text" cols="70" rows="10" class="form-control"></textarea>
+                <div id="searchOptions">
+                    <!-- Initially hidden, will be shown based on the selected option -->
+                    <div class="form-group" id="keySearchOption">
+                        <label for="text">Enter Key Word:</label>
+                        <input type="text" name="text" class="form-control">
+                    </div>
+                    <div class="form-group" id="urlSearchOption">
+                        <label for="url">Enter URL:</label>
+                        <input type="text" name="url" class="form-control">
+                    </div>
+                    <div class="form-group" id="uploadSearchOption">
+                        <label for="image">Upload Image:</label>
+                        <input type="file" name="image" accept="image/*">
+                    </div>
                 </div>
-                
                 <div class="translate">
                     <button type="submit" class="btn btn-success">Generate!</button>
                 </div>
             </form>
         </div>
     </div>
-    
+
+    <script>
+        // Get references to the select and searchOptions elements
+        const methodSelect = document.getElementById("methodSelect");
+        const searchOptions = document.getElementById("searchOptions");
+
+        // Get references to the specific search option elements
+        const keySearchOption = document.getElementById("keySearchOption");
+        const urlSearchOption = document.getElementById("urlSearchOption");
+        const uploadSearchOption = document.getElementById("uploadSearchOption");
+
+        // Function to toggle visibility of search options based on selected method
+        function toggleSearchOptions() {
+            const selectedMethod = methodSelect.value;
+
+            // Hide all search option elements
+            keySearchOption.style.display = "none";
+            urlSearchOption.style.display = "none";
+            uploadSearchOption.style.display = "none";
+
+            // Show the selected search option element
+            if (selectedMethod === "key-search") {
+                keySearchOption.style.display = "block";
+            } else if (selectedMethod === "url-search") {
+                urlSearchOption.style.display = "block";
+            } else if (selectedMethod === "upload-search") {
+                uploadSearchOption.style.display = "block";
+            }
+        }
+
+        // Initial call to set the initial visibility
+        toggleSearchOptions();
+
+        // Add an event listener to the select element to dynamically change options
+        methodSelect.addEventListener("change", toggleSearchOptions);
+    </script>
 </body>
 
 </html>
+
