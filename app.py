@@ -1,7 +1,6 @@
 import os
-from tabnanny import filename_only
 import requests
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, send_from_directory
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -39,6 +38,8 @@ def index():
                 file.save(filepath)
 
                 is_nsfw, nsfw_score, image_path = detect_nsfw_image_file(filepath)
+
+                # Pass the NSFW detection results and image path to the results template
                 return render_template('results.html', is_nsfw=is_nsfw, nsfw_score=nsfw_score, image_path=image_path)
 
         elif method == 'key-search':
@@ -64,10 +65,9 @@ def detect_nsfw_image_file(filepath):
             if nsfw_score is not None:
                 threshold = 0.5  # Adjust this threshold as needed
                 is_nsfw = nsfw_score >= threshold
-                image_path = None  # Initialize image_path as None
 
-                if is_nsfw:
-                    image_path = '/static/uploads/' + filename_only  # Change the path as needed
+                # Provide the correct image path based on the file saved
+                image_path = '/uploads/' + secure_filename(image_file.filename)
 
                 return is_nsfw, nsfw_score, image_path
             else:
@@ -78,7 +78,6 @@ def detect_nsfw_image_file(filepath):
         return False, None, None
 
 def detect_nsfw_image_url(image_url):
-    # Call the DeepAI NSFW Detector API to scan the image URL
     api_url = "https://api.deepai.org/api/nsfw-detector"
     headers = {
         'api-key': 'quickstart-QUdJIGlzIGNvbWluZy4uLi4K',
@@ -89,7 +88,6 @@ def detect_nsfw_image_url(image_url):
     try:
         response = requests.post(api_url, data=data, headers=headers)
         result = response.json()
-        # Extract the NSFW score
         nsfw_score = result.get('output', {}).get('nsfw_score', None)
 
         if nsfw_score is not None:
@@ -107,6 +105,31 @@ def detect_nsfw_image_url(image_url):
     except Exception as e:
         print(str(e))
         return False, None, image_url
+
+# Serve uploaded images
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+@app.route('/results', methods=['POST'])
+def show_results():
+    method = request.form['language']
+    if method == 'upload-search':
+        if 'image' in request.files:
+            file = request.files['image']
+            if file.filename == '':
+                return render_template('index.html', error='No selected file')
+
+            if not allowed_file(file.filename):
+                return render_template('index.html', error='Invalid file format')
+
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+
+            is_nsfw, nsfw_score, image_path = detect_nsfw_image_file(filepath)
+
+            # Pass the NSFW detection results and image path to the results template
+            return render_template('results.html', is_nsfw=is_nsfw, nsfw_score=nsfw_score, image_path=image_path)
 
 if __name__ == '__main__':
     app.run(debug=True)
