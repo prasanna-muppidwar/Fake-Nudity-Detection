@@ -133,3 +133,5 @@ def show_results():
 
 if __name__ == '__main__':
     app.run(debug=True)
+'''{'id': '579733d4-0da9-4fff-9387-451d02109b73', 'output': {'detections': [{'confidence': '0.86', 'bounding_box': [1806.5749999999998, 1216.2374999999997, 842.8312499999998, 487.20624999999995], 'name': 'Buttocks - Exposed'}, {'confidence': '0.65', 'bounding_box': [1095.3249999999998, 544.1062499999999, 462.31249999999994, 526.3249999999999], 'name': 'Female Breast - Covered'}], 'nsfw_score': 0.5617509484291077}}
+'''
