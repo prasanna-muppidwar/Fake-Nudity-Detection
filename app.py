@@ -1,6 +1,6 @@
 import os
 import requests
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -23,29 +23,35 @@ def allowed_file(filename):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        # Check if the user selected 'Image URL' option
-        if request.form['language'] == 'url-search':
+        method = request.form['language']
+        if method == 'url-search':
             image_url = request.form['text']
             is_nsfw, nsfw_score = detect_nsfw_image_url(image_url)
             return render_template('results.html', is_nsfw=is_nsfw, nsfw_score=nsfw_score)
 
-        # Check if a file was uploaded
-        if 'image' in request.files:
-            file = request.files['image']
-            if file.filename == '':
-                return render_template('index.html', error='No selected file')
+        elif method == 'upload-search':
+            # Check if a file was uploaded
+            if 'image' in request.files:
+                file = request.files['image']
+                if file.filename == '':
+                    return render_template('index.html', error='No selected file')
 
-            # Check if the file is allowed (image format)
-            if not allowed_file(file.filename):
-                return render_template('index.html', error='Invalid file format')
+                # Check if the file is allowed (image format)
+                if not allowed_file(file.filename):
+                    return render_template('index.html', error='Invalid file format')
 
-            # Save the uploaded file to the UPLOAD_FOLDER
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
+                # Save the uploaded file to the UPLOAD_FOLDER
+                filename = secure_filename(file.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
 
-            is_nsfw, nsfw_score = detect_nsfw_image_file(filepath)
-            return render_template('results.html', is_nsfw=is_nsfw, nsfw_score=nsfw_score)
+                is_nsfw, nsfw_score = detect_nsfw_image_file(filepath)
+                return render_template('results.html', is_nsfw=is_nsfw, nsfw_score=nsfw_score)
+
+        elif method == 'key-search':
+            original_text = request.form['text']
+            target_language = request.form['target_language']  # Replace with your translation logic
+            return render_template('results.html', original_text=original_text, target_language=target_language)
 
     return render_template('index.html')
 
@@ -53,7 +59,7 @@ def detect_nsfw_image_file(filepath):
     # Call the DeepAI NSFW Detector API to scan the uploaded image
     api_url = "https://api.deepai.org/api/nsfw-detector"
     headers = {
-        'api-key':'quickstart-QUdJIGlzIGNvbWluZy4uLi4K',
+        'api-key': DEEPAI_API_KEY,
     }
 
     try:
@@ -80,7 +86,7 @@ def detect_nsfw_image_url(image_url):
     # Call the DeepAI NSFW Detector API to scan the image URL
     api_url = "https://api.deepai.org/api/nsfw-detector"
     headers = {
-        'api-key': DEEPAI_API_KEY,
+        'api-key': 'quickstart-QUdJIGlzIGNvbWluZy4uLi4K',
     }
 
     data = {'image': image_url}
