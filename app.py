@@ -1,4 +1,5 @@
 import os
+from tabnanny import filename_only
 import requests
 from flask import Flask, request, render_template
 from werkzeug.utils import secure_filename
@@ -25,8 +26,8 @@ def index():
         method = request.form['language']
         if method == 'url-search':
             image_url = request.form['text']
-            is_nsfw, nsfw_score = detect_nsfw_image_url(image_url)
-            return render_template('results.html', is_nsfw=is_nsfw, nsfw_score=nsfw_score)
+            is_nsfw, nsfw_score, image_path = detect_nsfw_image_url(image_url)
+            return render_template('results.html', is_nsfw=is_nsfw, nsfw_score=nsfw_score, image_path=image_path)
 
         elif method == 'upload-search':
             # Check if a file was uploaded
@@ -44,8 +45,8 @@ def index():
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(filepath)
 
-                is_nsfw, nsfw_score = detect_nsfw_image_file(filepath)
-                return render_template('results.html', is_nsfw=is_nsfw, nsfw_score=nsfw_score)
+                is_nsfw, nsfw_score, image_path = detect_nsfw_image_file(filepath)
+                return render_template('results.html', is_nsfw=is_nsfw, nsfw_score=nsfw_score, image_path=image_path)
 
         elif method == 'key-search':
             original_text = request.form['text']
@@ -73,13 +74,19 @@ def detect_nsfw_image_file(filepath):
                 # Determine if the image contains NSFW content based on the threshold
                 threshold = 0.5  # Adjust this threshold as needed
                 is_nsfw = nsfw_score >= threshold
-                return is_nsfw, nsfw_score
+                image_path = None  # Initialize image_path as None
+
+                # If the image is NSFW, provide the image path to display in the template
+                if is_nsfw:
+                    image_path = '/static/uploads/' + filename_only  # Change the path as needed
+
+                return is_nsfw, nsfw_score, image_path
             else:
-                return False, None
+                return False, None, None
 
     except Exception as e:
         print(str(e))
-        return False, None
+        return False, None, None
 
 def detect_nsfw_image_url(image_url):
     # Call the DeepAI NSFW Detector API to scan the image URL
@@ -100,13 +107,19 @@ def detect_nsfw_image_url(image_url):
             # Determine if the image contains NSFW content based on the threshold
             threshold = 0.5  # Adjust this threshold as needed
             is_nsfw = nsfw_score >= threshold
-            return is_nsfw, nsfw_score
+            image_path = None  # Initialize image_path as None
+
+            # If the image is NSFW, provide the image path to display in the template
+            if is_nsfw:
+                image_path = image_url  # You can provide the URL itself as the image path
+
+            return is_nsfw, nsfw_score, image_path
         else:
-            return False, None
+            return False, None, image_url
 
     except Exception as e:
         print(str(e))
-        return False, None
+        return False, None, image_url
 
 if __name__ == '__main__':
     app.run(debug=True)
