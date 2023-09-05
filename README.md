@@ -78,6 +78,10 @@ Contributions to the Fake Nude Detection System are welcome. If you would like t
 2. Create a new branch for your feature or bugfix.
 3. Make your changes and submit a pull request.
 
+## Tasks you could Contribute 
+1. Create a Visually appealing User Interface
+2. Train a robust Nude Detection ML Model
+3. Contribute to basic bug fixes and add interactivity
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
