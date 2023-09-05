@@ -1,5 +1,6 @@
 # Fake Nude Detection System
-![System Logo](path/to/your/logo/image.png)
+![System Logo](https://github.com/prasanna-muppidwar/Fake-Nudity-Detection/blob/main/Fake%20Nude%20Detection%20System.png
+)
 
 The Fake Nude Detection System is a machine learning-based project that utilizes advanced image analysis techniques to classify images and generate nudity reports. This system allows users to upload images from their PCs or provide image URLs for analysis. Additionally, it offers a unique feature that enables users to search for images on Instagram using keywords or usernames, and then assess whether these images contain fake or explicit content.
 
