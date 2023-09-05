@@ -68,7 +68,7 @@ Open a web browser and navigate to `http://localhost:5000` to access the Fake Nu
 
 - Python
 - Flask (Web framework)
-- Machine Learning Models (for image analysis)
+- Machine Learning API , We are working on Models (for image analysis)
 - Instagram API (for image search, if applicable)
 
 ## Contributing
@@ -84,6 +84,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Thank you for using the Fake Nude Detection System! If you have any questions or encounter issues, please feel free to contact us at [your-email@example.com].
+Thank you for using the Fake Nude Detection System! 
 
-[![GitHub stars](https://img.shields.io/github/stars/your-username/fake-nude-detection.svg?style=social&label=Star&maxAge=2592000)](https://github.com/your-username/fake-nude-detection)
