@@ -1,142 +1,82 @@
-import os
-from tabnanny import filename_only
+import streamlit as st
 import requests
-from flask import Flask, request, render_template
+import os
 from werkzeug.utils import secure_filename
+from decouple import config
 
-app = Flask(__name__)
+# Read the API key from the .env file
+DEEPAI_API_KEY = config("DEEPAI_API_KEY")
 
-DEEPAI_API_KEY = "656aabe8-347c-4db8-9f18-01d29d91de43"
-
-UPLOAD_FOLDER = "uploads"
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
+# Define allowed file extensions and a function to check them
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif"}
-
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Streamlit UI
+st.title("Image Classification Portal")
 
-@app.route("/", methods=["GET", "POST"])
-def index():
-    if request.method == "POST":
-        method = request.form["method"]
-        if method == "url-search":
-            image_url = request.form["text"]
-            is_nsfw, nsfw_score, image_path = detect_nsfw_image_url(image_url)
-            return render_template(
-                "results.html",
-                is_nsfw=is_nsfw,
-                nsfw_score=nsfw_score,
-                image_path=image_path,
-            )
+# Create a selection box for choosing the search method
+selected_method = st.selectbox("Select Method:", ["Search Entirely by Key Word", "Upload URL", "Upload Image"])
 
-        elif method == "upload-search":
-            if "image" in request.files:
-                file = request.files["image"]
-                if file.filename == " ":
-                    return render_template("index.html", error="No selected file")
+# Create a form based on the selected method
+if selected_method == "Search Entirely by Key Word":
+    keyword = st.text_input("Enter Key Word:")
+    if st.button("Generate!"):
+        # Implement keyword-based search logic here
+        st.write("You selected the 'Search Entirely by Key Word' method.")
+        st.write(f"You entered the keyword: {keyword}")
 
-                if not allowed_file(file.filename):
-                    return render_template("index.html", error="Invalid file format")
+elif selected_method == "Upload URL":
+    url = st.text_input("Enter URL:")
+    if st.button("Generate!"):
+        # Implement URL-based search logic here
+        st.write("You selected the 'Upload URL' method.")
+        st.write(f"You entered the URL: {url}")
 
-                filename = secure_filename(file.filename)
-                filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-                file.save(filepath)
+elif selected_method == "Upload Image":
+    uploaded_file = st.file_uploader("Upload Image:", type=["jpg", "jpeg", "png", "gif"])
+    if uploaded_file is not None:
+        if allowed_file(uploaded_file.name):
+            if st.button("Generate!"):
+                # Create the 'tmp' directory if it doesn't exist
+                if not os.path.exists("tmp"):
+                    os.makedirs("tmp")
 
-                is_nsfw, nsfw_score, image_path = detect_nsfw_image_file(filepath)
-                return render_template(
-                    "results.html",
-                    is_nsfw=is_nsfw,
-                    nsfw_score=nsfw_score,
-                    image_path=image_path,
-                )
+                # Save the uploaded file to a temporary location
+                tmp_path = os.path.join("tmp", uploaded_file.name)
+                with open(tmp_path, "wb") as f:
+                    f.write(uploaded_file.read())
 
-        elif method == "key-search":
-            original_text = request.form["text"]
-            target_language = request.form[
-                "target_language"
-            ]  # Replace with your translation logic
+                # Implement image classification logic using the DeepAI API
+                st.write("You selected the 'Upload Image' method.")
 
-            return render_template(
-                "results.html",
-                original_text=original_text,
-                target_language=target_language,
-            )
+                # Define the DeepAI API endpoint for NSFW detection
+                api_url = "https://api.deepai.org/api/nsfw-detector"
 
-    return render_template("index.html")
+                # Set headers with the DeepAI API key
+                headers = {
+                    "api-key": DEEPAI_API_KEY,
+                }
 
+                try:
+                    # Open the image file and send it to the API for NSFW detection
+                    with open(tmp_path, "rb") as image_file:
+                        files = {"image": (os.path.basename(tmp_path), image_file)}
+                        response = requests.post(api_url, files=files, headers=headers)
+                        result = response.json()
 
-def detect_nsfw_image_file(image_path):
-    api_url = "https://api.deepai.org/api/nsfw-detector"
-    headers = {
-        "api-key": "656aabe8-347c-4db8-9f18-01d29d91de43",
-    }
+                        # Extract classification results from the API response
+                        nsfw_classification = result.get("output", {}).get("nsfw_score", "Unknown")
 
-    try:
-        with open(image_path, "rb") as image_file:
-            files = {"image": (os.path.basename(image_path), image_file)}
-            response = requests.post(api_url, files=files, headers=headers)
-            result = response.json()
-            nsfw_score = result.get("output", {}).get("nsfw_score", None)
+                        st.write(f"NSFW Classification Score: {nsfw_classification}")
 
-            if nsfw_score is not None:
-                threshold = 0.5  # Adjust this threshold as needed
-                is_nsfw = nsfw_score >= threshold
-                image_path = None  # Initialize image_path as None
-
-                if is_nsfw:
-                    image_path = (
-                        "/static/uploads/" + filename_only
-                    )  # Change the path as needed
-
-                return is_nsfw, nsfw_score, image_path
-            else:
-                return False, None, None
-
-    except Exception as e:
-        print(str(e))
-        return False, None, None
-
-
-def detect_nsfw_image_url(image_url):
-    # Call the DeepAI NSFW Detector API to scan the image URL
-    api_url = "https://api.deepai.org/api/nsfw-detector"
-    headers = {
-        "api-key": "656aabe8-347c-4db8-9f18-01d29d91de43",
-    }
-
-    data = {"image": image_url}
-
-    try:
-        response = requests.post(api_url, data=data, headers=headers)
-        result = response.json()
-        # Extract the NSFW score
-        nsfw_score = result.get("output", {}).get("nsfw_score", None)
-
-        if nsfw_score is not None:
-            threshold = 0.5  # Adjust this threshold as needed
-            is_nsfw = nsfw_score >= threshold
-            image_path = None  # Initialize image_path as None
-
-            if is_nsfw:
-                image_path = (
-                    image_url  # You can provide the URL itself as the image path
-                )
-
-            return is_nsfw, nsfw_score, image_path
+                        if isinstance(nsfw_classification, (float, int)) and nsfw_classification >= 0.5:
+                            st.write("This image is likely NSFW.")
+                        else:
+                            st.write("This image is safe.")
+                        st.image(tmp_path, caption="Uploaded Image", use_column_width=True)
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
         else:
-            return False, None, image_url
-
-    except Exception as e:
-        print(str(e))
-        return False, None, image_url
-
-
-if __name__ == "__main__":
-    app.run(debug=True, port=5001)
-
-# Output
-"""{'id': '579733d4-0da9-4fff-9387-451d02109b73', 'output': {'detections': [{'confidence': '0.86', 'bounding_box': [1806.5749999999998, 1216.2374999999997, 842.8312499999998, 487.20624999999995], 'name': 'Buttocks - Exposed'}, {'confidence': '0.65', 'bounding_box': [1095.3249999999998, 544.1062499999999, 462.31249999999994, 526.3249999999999], 'name': 'Female Breast - Covered'}], 'nsfw_score': 0.5617509484291077}}
-"""
+            st.warning("Invalid file format. Please upload a valid image file (jpg, jpeg, png, gif).")
