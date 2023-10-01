@@ -12,6 +12,8 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 st.title("Fake Nude Detection Portal")
+# Create a paragraph of text
+st.write("The Fake Nude Detection System is a machine learning-based project that utilizes advanced image analysis techniques to classify images and generate nudity reports. This system allows users to upload images from their PCs or provide image URLs for analysis. Additionally, it offers a unique feature that enables users to search for images on Instagram using keywords or usernames, and then assess whether these images contain fake or explicit content.")
 
 selected_method = st.selectbox("Select Method:", ["Search Entirely by Key Word", "Upload URL", "Upload Image"])
 
@@ -53,14 +55,11 @@ elif selected_method == "Upload Image":
                         response = requests.post(api_url, files=files, headers=headers)
                         result = response.json()
 
-                        nsfw_classification = result.get("output", {}).get("nsfw_score", "Unknown")
+                        nsfw_classification = result.get("output", {})
 
                         st.write(f"NSFW Classification Score: {nsfw_classification}")
 
-                        if isinstance(nsfw_classification, (float, int)) and nsfw_classification >= 0.5:
-                            st.write("This image is likely NSFW.")
-                        else:
-                            st.write("This image is safe.")
+                        
                         st.image(tmp_path, caption="Uploaded Image", use_column_width=True)
                 except Exception as e:
                     st.error(f"Error: {str(e)}")
