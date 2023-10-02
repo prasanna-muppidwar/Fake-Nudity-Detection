@@ -4,17 +4,27 @@ import os
 from werkzeug.utils import secure_filename
 from decouple import config
 
-DEEPAI_API_KEY = config("DEEPAI_API_KEY")
+# Load environment variables from .env
+API_URL = config("API_URL")
+API_KEY = config("API_KEY")
+API_HOST = config("API_HOST")
 
-ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif"}
+# Define the NSFW detection API headers
+API_HEADERS = {
+    "content-type": "application/json",
+    "X-RapidAPI-Key": API_KEY,
+    "X-RapidAPI-Host": API_HOST,
+}
 
+# Function to check allowed file types
 def allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in {"jpg", "jpeg", "png", "gif"}
 
+# Streamlit UI
 st.title("Fake Nude Detection Portal")
-# Create a paragraph of text
-st.write("The Fake Nude Detection System is a machine learning-based project that utilizes advanced image analysis techniques to classify images and generate nudity reports. This system allows users to upload images from their PCs or provide image URLs for analysis. Additionally, it offers a unique feature that enables users to search for images on Instagram using keywords or usernames, and then assess whether these images contain fake or explicit content.")
+st.write("The Fake Nude Detection System is a machine learning-based project that utilizes advanced image analysis techniques to classify images and generate nudity reports.")
 
+# Create a selection box for choosing the search method
 selected_method = st.selectbox("Select Method:", ["Search Entirely by Key Word", "Upload URL", "Upload Image"])
 
 if selected_method == "Search Entirely by Key Word":
@@ -37,31 +47,29 @@ elif selected_method == "Upload Image":
                 if not os.path.exists("tmp"):
                     os.makedirs("tmp")
 
-                tmp_path = os.path.join("tmp", uploaded_file.name)
+                tmp_path = os.path.join("tmp", secure_filename(uploaded_file.name))
                 with open(tmp_path, "wb") as f:
                     f.write(uploaded_file.read())
 
                 st.write("You selected the 'Upload Image' method.")
 
-                api_url = "https://api.deepai.org/api/nsfw-detector"
+                # Make a request to the NSFW detection API
+                payload = {"url": tmp_path}  # Update payload format according to API documentation
+                response = requests.post(API_URL, json=payload, headers=API_HEADERS)
 
-                headers = {
-                    "api-key": DEEPAI_API_KEY,
-                }
+                if response.status_code == 200:
+                    result = response.json()
+                    nsfw_classification = result.get("output", {})
 
-                try:
-                    with open(tmp_path, "rb") as image_file:
-                        files = {"image": (os.path.basename(tmp_path), image_file)}
-                        response = requests.post(api_url, files=files, headers=headers)
-                        result = response.json()
+                    st.write(f"NSFW Classification Score: {nsfw_classification}")
 
-                        nsfw_classification = result.get("output", {})
-
-                        st.write(f"NSFW Classification Score: {nsfw_classification}")
-
-                        
-                        st.image(tmp_path, caption="Uploaded Image", use_column_width=True)
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
+                    # Determine if the image is NSFW based on the classification
+                    if nsfw_classification.get("nsfw_score", 0.0) >= 0.5:
+                        st.warning("This image is likely NSFW.")
+                    else:
+                        st.success("This image is safe.")
+                    st.image(tmp_path, caption="Uploaded Image", use_column_width=True)
+                else:
+                    st.error(f"API Request Error: Status Code {response.status_code}")
         else:
             st.warning("Invalid file format. Please upload a valid image file (jpg, jpeg, png, gif).")
