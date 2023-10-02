@@ -27,15 +27,22 @@ st.write("The Fake Nude Detection System is a machine learning-based project tha
 # Create a selection box for choosing the search method
 selected_method = st.selectbox("Select Method:", ["Search Entirely by Key Word", "Upload URL", "Upload Image"])
 
+# Initialize payload as an empty dictionary
+payload = {}
+
 if selected_method == "Search Entirely by Key Word":
     keyword = st.text_input("Enter Key Word:")
     if st.button("Generate!"):
+        # Set the payload for keyword search if needed
+        payload = {"keyword": keyword}
         st.write("You selected the 'Search Entirely by Key Word' method.")
         st.write(f"You entered the keyword: {keyword}")
 
 elif selected_method == "Upload URL":
     url = st.text_input("Enter URL:")
     if st.button("Generate!"):
+        # Set the payload for URL upload if needed
+        payload = {"url": url}
         st.write("You selected the 'Upload URL' method.")
         st.write(f"You entered the URL: {url}")
 
@@ -52,9 +59,10 @@ elif selected_method == "Upload Image":
                     f.write(uploaded_file.read())
 
                 st.write("You selected the 'Upload Image' method.")
+                # Set the payload for image upload if needed
+                payload = {"image_path": tmp_path}
 
-                # Make a request to the NSFW detection API
-                payload = {"url": tmp_path}  # Update payload format according to API documentation
+                # Make a request to the NSFW detection API with the appropriate payload
                 response = requests.post(API_URL, json=payload, headers=API_HEADERS)
 
                 if response.status_code == 200:
